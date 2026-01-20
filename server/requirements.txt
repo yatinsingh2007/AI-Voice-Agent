@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic-settings
+python-multipart
+pydantic[email]
+websockets
+httpx
+pytest
