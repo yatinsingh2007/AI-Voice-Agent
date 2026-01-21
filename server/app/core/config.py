@@ -1,12 +1,24 @@
-from typing import List, Union
-from pydantic import AnyHttpUrl, validator
+from typing import List, Union, Optional
+from pydantic import AnyHttpUrl, validator, AnyUrl
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "VoiceAI Backend"
     
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-super-secret-key-change-me")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
+    # Database
+    DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
+
+    # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
@@ -15,7 +27,7 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):
             return v
-        raise ValueError(v)
+        return v
 
     class Config:
         case_sensitive = True

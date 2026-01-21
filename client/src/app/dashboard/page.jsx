@@ -9,14 +9,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mic, Play, Square, Send, Globe, Zap, Cpu, Activity, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
     const [isActive, setIsActive] = useState(false);
     const [messages, setMessages] = useState([
         { role: "assistant", content: "Hello! I'm your VoiceAI assistant. How can I help you today?", timestamp: new Date().toLocaleTimeString() },
     ]);
-    const [status, setStatus] = useState("idle"); // idle, listening, thinking, speaking
+    const [status, setStatus] = useState("idle");
+    const [stats, setStats] = useState({ latency: "0ms", turnTime: "0.0s" });
+
     const scrollRef = useRef(null);
+    const socketRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -24,12 +29,75 @@ export default function DashboardPage() {
         }
     }, [messages]);
 
-    const toggleSession = () => {
-        setIsActive(!isActive);
-        if (!isActive) {
-            setStatus("listening");
-        } else {
+    const stopRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        if (socketRef.current) {
+            socketRef.current.close();
+        }
+        setIsActive(false);
+        setStatus("idle");
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            // Connect to WebSocket
+            const socket = new WebSocket("ws://localhost:8000/api/v1/voice/stream");
+            socketRef.current = socket;
+
+            socket.onopen = () => {
+                console.log("WebSocket Connected");
+                setStatus("listening");
+
+                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                mediaRecorderRef.current = mediaRecorder;
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+                        socket.send(event.data);
+                    }
+                };
+
+                mediaRecorder.start(250);
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === "transcript") {
+                    setMessages(prev => {
+                        const lastMsg = prev[prev.length - 1];
+                        if (lastMsg && lastMsg.partial) {
+                            return [...prev.slice(0, -1), { ...lastMsg, content: data.content }];
+                        }
+                        return [...prev, { role: "user", content: data.content, timestamp: new Date().toLocaleTimeString(), partial: !data.is_final }];
+                    });
+                }
+                if (data.type === "status") {
+                    setStats({ latency: `${data.metrics.vad + data.metrics.stt}ms`, turnTime: "0.4s" });
+                }
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket Closed");
+                stopRecording();
+            };
+
+            setIsActive(true);
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
             setStatus("idle");
+        }
+    };
+
+    const toggleSession = () => {
+        if (isActive) {
+            stopRecording();
+        } else {
+            startRecording();
         }
     };
 
@@ -40,13 +108,12 @@ export default function DashboardPage() {
                 <div className="flex flex-1 flex-col gap-6">
                     {/* Status Bar */}
                     <div className="grid grid-cols-4 gap-4">
-                        <MetricCard icon={Activity} label="Latency" value="120ms" trend="-10ms" color="text-green-400" />
-                        <MetricCard icon={Clock} label="Turn Time" value="0.8s" trend="+50ms" color="text-yellow-400" />
-                        <MetricCard icon={Cpu} label="Processing" value="Voice-Active" color="text-blue-400" />
+                        <MetricCard icon={Activity} label="Latency" value={stats.latency} trend="-5ms" color="text-green-400" />
+                        <MetricCard icon={Clock} label="Turn Time" value={stats.turnTime} trend="+10ms" color="text-yellow-400" />
+                        <MetricCard icon={Cpu} label="Processing" value={isActive ? "Active" : "Standby"} color="text-blue-400" />
                         <MetricCard icon={Globe} label="Search" value="Enabled" color="text-cyan-400" />
                     </div>
 
-                    {/* Main Interaction Card */}
                     <Card className="flex flex-1 flex-col glass border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4">
                             <Badge variant="outline" className="bg-white/5 border-white/10 uppercase tracking-widest text-[10px]">
@@ -81,7 +148,7 @@ export default function DashboardPage() {
                                 </div>
                             </ScrollArea>
 
-                            {/* Interaction Controls */}
+
                             <div className="flex flex-col items-center gap-6 mt-4">
                                 {/* Visualizer */}
                                 <div className="flex items-center gap-1 h-12">
@@ -134,7 +201,7 @@ export default function DashboardPage() {
                     </Card>
                 </div>
 
-                {/* Right Side: Context & Observability */}
+
                 <div className="w-[380px] flex flex-col gap-6">
                     <Card className="glass border-white/5 p-6 space-y-4">
                         <h3 className="font-bold text-white flex items-center gap-2">
@@ -221,6 +288,3 @@ function MetricItem({ label, value, progress, color = "bg-white/20" }) {
     );
 }
 
-function cn(...inputs) {
-    return inputs.filter(Boolean).join(" ");
-}
