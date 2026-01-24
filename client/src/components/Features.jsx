@@ -45,20 +45,20 @@ export default function Features() {
         <section id="features" className="relative py-24">
             <div className="container mx-auto px-6">
                 <div className="mb-16 text-center">
-                    <h2 className="mb-4 text-3xl font-bold text-white md:text-5xl tracking-tight">
+                    <h2 className="mb-4 text-3xl font-bold text-foreground md:text-5xl tracking-tight">
                         Engineered for <span className="text-primary italic">Performance</span>
                     </h2>
-                    <p className="mx-auto max-w-2xl text-zinc-400">
+                    <p className="mx-auto max-w-2xl text-muted-foreground">
                         A cascading voice pipeline built from the ground up for production-ready voice interactions.
                     </p>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {features.map((feature, i) => (
-                        <Card key={i} className="glass p-8 transition-all hover:scale-[1.02] hover:bg-white/5 border-white/5">
+                        <Card key={i} className="glass p-8 transition-all hover:scale-[1.02] hover:bg-muted/50 border-border">
                             <feature.icon className={`mb-4 h-8 w-8 ${feature.color}`} />
-                            <h3 className="mb-2 text-xl font-bold text-white">{feature.title}</h3>
-                            <p className="text-zinc-400 leading-relaxed">{feature.description}</p>
+                            <h3 className="mb-2 text-xl font-bold text-foreground">{feature.title}</h3>
+                            <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                         </Card>
                     ))}
                 </div>

@@ -17,14 +17,18 @@ export const metadata = {
     "Production-ready, low-latency voice assistant with real-time web search and context awareness.",
 };
 
+import { ThemeProvider } from "@/context/ThemeContext";
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <ThemeProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        >
+          {children}
+        </body>
+      </html>
+    </ThemeProvider>
   );
 }

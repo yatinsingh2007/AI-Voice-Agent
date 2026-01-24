@@ -10,8 +10,11 @@ import { Mic, Play, Square, Send, Globe, Zap, Cpu, Activity, Clock } from "lucid
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ThemeContext } from "@/context/ThemeContext";
+import { useContext } from "react";
 
 export default function DashboardPage() {
+    const { theme } = useContext(ThemeContext);
     const [isActive, setIsActive] = useState(false);
     const [messages, setMessages] = useState([
         { role: "assistant", content: "Hello! I'm your VoiceAI assistant. How can I help you today?", timestamp: new Date().toLocaleTimeString() },
@@ -22,12 +25,34 @@ export default function DashboardPage() {
     const scrollRef = useRef(null);
     const socketRef = useRef(null);
     const mediaRecorderRef = useRef(null);
+    const audioContextRef = useRef(null);
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
+
+    const playOutputAudio = async (arrayBuffer) => {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        try {
+            const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer).catch(e => {
+                console.log("Audio chunk received and ready for playback");
+            });
+
+            if (audioBuffer) {
+                const source = audioContextRef.current.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContextRef.current.destination);
+                source.start();
+            }
+        } catch (e) {
+            console.error("Playback error:", e);
+        }
+    };
 
     const stopRecording = () => {
         if (mediaRecorderRef.current) {
@@ -65,8 +90,24 @@ export default function DashboardPage() {
                 mediaRecorder.start(250);
             };
 
-            socket.onmessage = (event) => {
+            socket.onmessage = async (event) => {
+                if (event.data instanceof Blob) {
+                    // It's binary audio data from the AI
+                    const arrayBuffer = await event.data.arrayBuffer();
+                    playOutputAudio(arrayBuffer);
+                    return;
+                }
+
                 const data = JSON.parse(event.data);
+                if (data.type === "status") {
+                    if (data.status) setStatus(data.status);
+                    if (data.metrics) {
+                        setStats({
+                            latency: `${data.metrics.vad + data.metrics.stt}ms`,
+                            turnTime: "0.4s"
+                        });
+                    }
+                }
                 if (data.type === "transcript") {
                     setMessages(prev => {
                         const lastMsg = prev[prev.length - 1];
@@ -75,9 +116,6 @@ export default function DashboardPage() {
                         }
                         return [...prev, { role: "user", content: data.content, timestamp: new Date().toLocaleTimeString(), partial: !data.is_final }];
                     });
-                }
-                if (data.type === "status") {
-                    setStats({ latency: `${data.metrics.vad + data.metrics.stt}ms`, turnTime: "0.4s" });
                 }
             };
 
@@ -104,19 +142,17 @@ export default function DashboardPage() {
     return (
         <DashboardLayout>
             <div className="flex h-full p-6 gap-6">
-                {/* Left Side: Session View */}
                 <div className="flex flex-1 flex-col gap-6">
-                    {/* Status Bar */}
                     <div className="grid grid-cols-4 gap-4">
-                        <MetricCard icon={Activity} label="Latency" value={stats.latency} trend="-5ms" color="text-green-400" />
-                        <MetricCard icon={Clock} label="Turn Time" value={stats.turnTime} trend="+10ms" color="text-yellow-400" />
-                        <MetricCard icon={Cpu} label="Processing" value={isActive ? "Active" : "Standby"} color="text-blue-400" />
-                        <MetricCard icon={Globe} label="Search" value="Enabled" color="text-cyan-400" />
+                        <MetricCard icon={Activity} label="Latency" value={stats.latency} trend="-5ms" color="text-green-500" />
+                        <MetricCard icon={Clock} label="Turn Time" value={stats.turnTime} trend="+10ms" color="text-yellow-600" />
+                        <MetricCard icon={Cpu} label="Processing" value={isActive ? "Active" : "Standby"} color="text-blue-500" />
+                        <MetricCard icon={Globe} label="Search" value="Enabled" color="text-cyan-600" />
                     </div>
 
-                    <Card className="flex flex-1 flex-col glass border-white/5 relative overflow-hidden">
+                    <Card className="flex flex-1 flex-col glass border-border relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4">
-                            <Badge variant="outline" className="bg-white/5 border-white/10 uppercase tracking-widest text-[10px]">
+                            <Badge variant="outline" className="bg-muted/50 border-border uppercase tracking-widest text-[10px]">
                                 Active Session
                             </Badge>
                         </div>
@@ -137,12 +173,12 @@ export default function DashboardPage() {
                                             <div className={cn(
                                                 "rounded-2xl px-4 py-3 text-sm leading-relaxed",
                                                 msg.role === "user"
-                                                    ? "bg-primary text-white"
-                                                    : "bg-white/5 border border-white/10 text-zinc-300"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted/50 border border-border text-foreground"
                                             )}>
                                                 {msg.content}
                                             </div>
-                                            <span className="mt-1 text-[10px] text-zinc-500 uppercase font-mono">{msg.timestamp}</span>
+                                            <span className="mt-1 text-[10px] text-muted-foreground uppercase font-mono">{msg.timestamp}</span>
                                         </motion.div>
                                     ))}
                                 </div>
@@ -150,7 +186,6 @@ export default function DashboardPage() {
 
 
                             <div className="flex flex-col items-center gap-6 mt-4">
-                                {/* Visualizer */}
                                 <div className="flex items-center gap-1 h-12">
                                     {[...Array(isActive ? 12 : 5)].map((_, i) => (
                                         <motion.div
@@ -166,8 +201,8 @@ export default function DashboardPage() {
                                             className={cn(
                                                 "w-1.5 rounded-full transition-colors duration-500",
                                                 status === "listening" ? "bg-primary" :
-                                                    status === "speaking" ? "bg-green-400" :
-                                                        "bg-zinc-700"
+                                                    status === "speaking" ? "bg-green-500" :
+                                                        "bg-border"
                                             )}
                                         />
                                     ))}
@@ -182,16 +217,16 @@ export default function DashboardPage() {
                                         )}
                                         onClick={toggleSession}
                                     >
-                                        {isActive ? <Square className="h-7 w-7 fill-white" /> : <Mic className="h-8 w-8 text-white" />}
+                                        {isActive ? <Square className="h-7 w-7 fill-white" /> : <Mic className="h-8 w-8 text-primary-foreground" />}
                                     </Button>
 
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-white uppercase tracking-widest leading-none mb-1">
+                                        <span className="text-sm font-bold text-foreground uppercase tracking-widest leading-none mb-1">
                                             {status === "idle" ? "Standby" :
                                                 status === "listening" ? "Listening..." :
                                                     status === "thinking" ? "Thinking..." : "Speaking"}
                                         </span>
-                                        <span className="text-[10px] text-zinc-500 font-mono uppercase">
+                                        <span className="text-[10px] text-muted-foreground font-mono uppercase">
                                             {isActive ? "Audio stream active" : "Press to start"}
                                         </span>
                                     </div>
@@ -203,26 +238,26 @@ export default function DashboardPage() {
 
 
                 <div className="w-[380px] flex flex-col gap-6">
-                    <Card className="glass border-white/5 p-6 space-y-4">
-                        <h3 className="font-bold text-white flex items-center gap-2">
+                    <Card className="glass border-border p-6 space-y-4">
+                        <h3 className="font-bold text-foreground flex items-center gap-2">
                             <Cpu className="h-4 w-4 text-primary" />
                             Dynamic Context
                         </h3>
-                        <p className="text-xs text-zinc-500">Update the agent's persona or knowledge base mid-session.</p>
-                        <Separator className="bg-white/5" />
+                        <p className="text-xs text-muted-foreground">Update the agent's persona or knowledge base mid-session.</p>
+                        <Separator className="bg-border" />
 
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-mono text-zinc-500 uppercase">Current Persona</label>
-                                <div className="rounded-lg bg-white/5 border border-white/10 p-3 text-sm text-zinc-300 italic">
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase">Current Persona</label>
+                                <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm text-foreground italic">
                                     "You are a helpful technical assistant specialized in Next.js and high-performance Web APIs."
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-mono text-zinc-500 uppercase">Knowledge Base Update</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase">Knowledge Base Update</label>
                                 <textarea
-                                    className="w-full h-32 rounded-lg bg-black border border-white/10 p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
+                                    className="w-full h-32 rounded-lg bg-background border border-border p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
                                     placeholder="Paste new context or instructions here..."
                                 />
                             </div>
@@ -233,8 +268,8 @@ export default function DashboardPage() {
                         </div>
                     </Card>
 
-                    <Card className="flex-1 glass border-white/5 p-6 flex flex-col">
-                        <h3 className="font-bold text-white flex items-center gap-2 mb-6">
+                    <Card className="flex-1 glass border-border p-6 flex flex-col">
+                        <h3 className="font-bold text-foreground flex items-center gap-2 mb-6">
                             <Zap className="h-4 w-4 text-yellow-400" />
                             Pipeline Metrics
                         </h3>
@@ -255,14 +290,14 @@ export default function DashboardPage() {
 
 function MetricCard({ icon: Icon, label, value, trend, color }) {
     return (
-        <Card className="glass border-white/5 p-4 flex items-center gap-4">
-            <div className={cn("p-2 rounded-lg bg-white/5", color)}>
+        <Card className="glass border-border p-4 flex items-center gap-4">
+            <div className={cn("p-2 rounded-lg bg-muted/50", color)}>
                 <Icon className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase font-mono">{label}</span>
+                <span className="text-[10px] text-muted-foreground uppercase font-mono">{label}</span>
                 <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-white">{value}</span>
+                    <span className="text-lg font-bold text-foreground">{value}</span>
                     {trend && <span className={cn("text-[10px] font-mono", trend.startsWith('-') ? "text-green-400" : "text-red-400")}>{trend}</span>}
                 </div>
             </div>
@@ -270,14 +305,14 @@ function MetricCard({ icon: Icon, label, value, trend, color }) {
     );
 }
 
-function MetricItem({ label, value, progress, color = "bg-white/20" }) {
+function MetricItem({ label, value, progress, color = "bg-muted/20" }) {
     return (
         <div className="space-y-2">
             <div className="flex justify-between text-xs font-mono">
-                <span className="text-zinc-500 uppercase">{label}</span>
-                <span className="text-white font-bold">{value}</span>
+                <span className="text-muted-foreground uppercase">{label}</span>
+                <span className="text-foreground font-bold">{value}</span>
             </div>
-            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
                 <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
