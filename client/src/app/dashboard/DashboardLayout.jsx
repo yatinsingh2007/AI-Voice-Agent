@@ -53,6 +53,20 @@ export default function DashboardLayout({ children }) {
                     <Separator className="bg-border" />
                     <NavItem icon={Settings} label="Settings" collapsed={collapsed} />
 
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem("token");
+                            window.location.href = "/login";
+                        }}
+                        className={cn(
+                            "flex w-full items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all text-red-500 hover:bg-red-500/10 border border-transparent",
+                            collapsed ? "justify-center" : ""
+                        )}
+                    >
+                        <LogOut className="h-5 w-5" />
+                        {!collapsed && <span>Logout</span>}
+                    </button>
+
                     <div className={cn("flex items-center gap-3 p-3", collapsed ? "justify-center" : "")}>
                         <Avatar className="h-9 w-9 border border-border">
                             <AvatarImage src="https://github.com/shadcn.png" />

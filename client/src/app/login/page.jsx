@@ -1,5 +1,5 @@
 "use client";
-import { useContext } from "react"
+import { useContext, useState } from "react"
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,9 +8,45 @@ import { Label } from "@/components/ui/label";
 import { Mic, ArrowLeft } from "lucide-react";
 import { ThemeContext } from "@/context/ThemeContext"
 import Link from "next/link";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const { theme } = useContext(ThemeContext);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+            // FastAPI OAuth2PasswordRequestForm expects form-data
+            const formData = new FormData();
+            formData.append("username", email);
+            formData.append("password", password);
+
+            const resp = await axios.post("http://localhost:8000/api/v1/auth/login", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+
+            if (resp.data.access_token) {
+                localStorage.setItem("token", resp.data.access_token);
+                router.push("/dashboard");
+            }
+        } catch (err) {
+            console.error("Login failed:", err);
+            setError(err.response?.data?.detail || "Login failed. Please check your credentials.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
             <Link
@@ -38,32 +74,49 @@ export default function LoginPage() {
                 </div>
 
                 <Card className="glass border-border p-6 space-y-6">
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-muted-foreground">Email Address</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="name@example.com"
-                                className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="password" className="text-muted-foreground">Password</Label>
-                                <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                    <form onSubmit={handleLogin}>
+                        <div className="space-y-4">
+                            {error && (
+                                <div className="text-sm text-red-500 bg-red-500/10 p-2 rounded border border-red-500/20">
+                                    {error}
+                                </div>
+                            )}
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-muted-foreground">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    className="bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
                             </div>
-                            <Input
-                                id="password"
-                                type="password"
-                                className="bg-background/50 border-border text-foreground focus:ring-primary"
-                            />
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+                                    <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                                </div>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    className="bg-background/50 border-border text-foreground focus:ring-primary"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/20">
-                        Sign In
-                    </Button>
+                        <Button
+                            className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/20 mt-6"
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? "Signing In..." : "Sign In"}
+                        </Button>
+                    </form>
                 </Card>
 
                 <p className="mt-8 text-center text-sm text-muted-foreground">

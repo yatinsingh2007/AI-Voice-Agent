@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
@@ -32,5 +33,6 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

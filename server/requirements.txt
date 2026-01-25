@@ -7,3 +7,10 @@ pydantic[email]
 websockets
 httpx
 pytest
+edge-tts
+sqlalchemy
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]
+alembic
+bcrypt==3.2.0

@@ -4,34 +4,104 @@ import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mic, Play, Square, Send, Globe, Zap, Cpu, Activity, Clock } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Mic, Square, Activity, Clock, Cpu, Globe, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ThemeContext } from "@/context/ThemeContext";
-import { useContext } from "react";
+
+const VoiceOrb = ({ status, volume }) => {
+    const scale = 1 + volume * 2;
+
+    const variants = {
+        idle: {
+            scale: [1, 1.05, 1],
+            transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+            background: "radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, rgba(79, 70, 229, 0) 70%)",
+        },
+        listening: {
+            scale: scale,
+            transition: { type: "spring", stiffness: 300, damping: 20 },
+            background: "radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, rgba(79, 70, 229, 0) 70%)",
+        },
+        thinking: {
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+            transition: { duration: 2, repeat: Infinity, ease: "linear" },
+            background: "radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(124, 58, 237, 0) 70%)",
+        },
+        speaking: {
+            scale: [1, 1.1, 1],
+            transition: { duration: 0.5, repeat: Infinity, ease: "easeInOut" },
+            background: "radial-gradient(circle, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0) 70%)",
+        }
+    };
+
+    return (
+        <div className="relative flex items-center justify-center w-64 h-64">
+            {/* Outer Glow */}
+            <motion.div
+                animate={status}
+                variants={variants}
+                className="absolute inset-0 rounded-full blur-3xl opacity-50"
+            />
+
+            {/* Main Orb */}
+            <motion.div
+                animate={status}
+                variants={variants}
+                className={cn(
+                    "relative w-48 h-48 rounded-full border border-white/10 shadow-2xl backdrop-blur-sm overflow-hidden",
+                    "bg-linear-to-br from-primary/30 to-background/50"
+                )}
+            >
+                {/* Surface Waves */}
+                <motion.div
+                    animate={{
+                        y: [-10, 10, -10],
+                        x: [-5, 5, -5],
+                    }}
+                    transition={{ duration: 5, repeat: Infinity }}
+                    className="absolute inset-0 bg-primary/10 mix-blend-overlay"
+                />
+
+                {/* Core Light */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-white/5 blur-xl" />
+                </div>
+            </motion.div>
+        </div>
+    );
+};
 
 export default function DashboardPage() {
-    const { theme } = useContext(ThemeContext);
     const [isActive, setIsActive] = useState(false);
-    const [messages, setMessages] = useState([
-        { role: "assistant", content: "Hello! I'm your VoiceAI assistant. How can I help you today?", timestamp: new Date().toLocaleTimeString() },
-    ]);
     const [status, setStatus] = useState("idle");
     const [stats, setStats] = useState({ latency: "0ms", turnTime: "0.0s" });
+    const [volume, setVolume] = useState(0);
 
-    const scrollRef = useRef(null);
     const socketRef = useRef(null);
-    const mediaRecorderRef = useRef(null);
     const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const animationFrameRef = useRef(null);
 
+    // Auto-start session on mount
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        startRecording();
+        return () => stopRecording();
+    }, []);
+
+    const updateVolume = () => {
+        if (analyserRef.current) {
+            const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+            analyserRef.current.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            setVolume(average / 128); // Normalize to 0-1 range
         }
-    }, [messages]);
+        animationFrameRef.current = requestAnimationFrame(updateVolume);
+    };
 
     const playOutputAudio = async (arrayBuffer) => {
         if (!audioContextRef.current) {
@@ -40,7 +110,7 @@ export default function DashboardPage() {
 
         try {
             const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer).catch(e => {
-                console.log("Audio chunk received and ready for playback");
+                console.log("Audio chunk received");
             });
 
             if (audioBuffer) {
@@ -55,9 +125,9 @@ export default function DashboardPage() {
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current) {
-            mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+            audioContextRef.current.close();
         }
         if (socketRef.current) {
             socketRef.current.close();
@@ -69,30 +139,55 @@ export default function DashboardPage() {
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-            // Connect to WebSocket
             const socket = new WebSocket("ws://localhost:8000/api/v1/voice/stream");
             socketRef.current = socket;
 
             socket.onopen = () => {
-                console.log("WebSocket Connected");
+                console.log("Nebula Connected");
                 setStatus("listening");
 
-                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                mediaRecorderRef.current = mediaRecorder;
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                audioContextRef.current = audioContext;
 
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-                        socket.send(event.data);
+                const source = audioContext.createMediaStreamSource(stream);
+
+                // Analyser for UI reactivity
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                analyserRef.current = analyser;
+                updateVolume();
+
+                // Cleaning Pipeline
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 80;
+
+                const compressor = audioContext.createDynamicsCompressor();
+                compressor.threshold.setValueAtTime(-50, audioContext.currentTime);
+
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(analyser);
+                analyser.connect(filter);
+                filter.connect(compressor);
+                compressor.connect(processor);
+                processor.connect(audioContext.destination);
+
+                processor.onaudioprocess = (e) => {
+                    if (socket.readyState === WebSocket.OPEN) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        const pcmData = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            const s = Math.max(-1, Math.min(1, inputData[i]));
+                            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+                        socket.send(pcmData.buffer);
                     }
                 };
-
-                mediaRecorder.start(250);
             };
 
             socket.onmessage = async (event) => {
                 if (event.data instanceof Blob) {
-                    // It's binary audio data from the AI
                     const arrayBuffer = await event.data.arrayBuffer();
                     playOutputAudio(arrayBuffer);
                     return;
@@ -108,218 +203,105 @@ export default function DashboardPage() {
                         });
                     }
                 }
-                if (data.type === "transcript") {
-                    setMessages(prev => {
-                        const lastMsg = prev[prev.length - 1];
-                        if (lastMsg && lastMsg.partial) {
-                            return [...prev.slice(0, -1), { ...lastMsg, content: data.content }];
-                        }
-                        return [...prev, { role: "user", content: data.content, timestamp: new Date().toLocaleTimeString(), partial: !data.is_final }];
-                    });
-                }
             };
 
-            socket.onclose = () => {
-                console.log("WebSocket Closed");
-                stopRecording();
-            };
-
+            socket.onclose = () => stopRecording();
             setIsActive(true);
         } catch (err) {
-            console.error("Error accessing microphone:", err);
+            console.error("Mic Error:", err);
             setStatus("idle");
         }
     };
 
     const toggleSession = () => {
-        if (isActive) {
-            stopRecording();
-        } else {
-            startRecording();
-        }
+        if (isActive) stopRecording();
+        else startRecording();
     };
 
     return (
         <DashboardLayout>
-            <div className="flex h-full p-6 gap-6">
-                <div className="flex flex-1 flex-col gap-6">
-                    <div className="grid grid-cols-4 gap-4">
-                        <MetricCard icon={Activity} label="Latency" value={stats.latency} trend="-5ms" color="text-green-500" />
-                        <MetricCard icon={Clock} label="Turn Time" value={stats.turnTime} trend="+10ms" color="text-yellow-600" />
-                        <MetricCard icon={Cpu} label="Processing" value={isActive ? "Active" : "Standby"} color="text-blue-500" />
-                        <MetricCard icon={Globe} label="Search" value="Enabled" color="text-cyan-600" />
-                    </div>
-
-                    <Card className="flex flex-1 flex-col glass border-border relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4">
-                            <Badge variant="outline" className="bg-muted/50 border-border uppercase tracking-widest text-[10px]">
-                                Active Session
-                            </Badge>
-                        </div>
-
-                        <div className="flex-1 flex flex-col p-6">
-                            <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
-                                <div className="flex flex-col gap-6">
-                                    {messages.map((msg, idx) => (
-                                        <motion.div
-                                            key={idx}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className={cn(
-                                                "flex flex-col max-w-[80%]",
-                                                msg.role === "user" ? "ml-auto items-end" : "items-start"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                                                msg.role === "user"
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "bg-muted/50 border border-border text-foreground"
-                                            )}>
-                                                {msg.content}
-                                            </div>
-                                            <span className="mt-1 text-[10px] text-muted-foreground uppercase font-mono">{msg.timestamp}</span>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-
-
-                            <div className="flex flex-col items-center gap-6 mt-4">
-                                <div className="flex items-center gap-1 h-12">
-                                    {[...Array(isActive ? 12 : 5)].map((_, i) => (
-                                        <motion.div
-                                            key={i}
-                                            animate={status === "listening" || status === "speaking" ? {
-                                                height: [4, status === "listening" ? 32 : 48, 4],
-                                            } : { height: 4 }}
-                                            transition={{
-                                                duration: 1,
-                                                repeat: Infinity,
-                                                delay: i * 0.1,
-                                            }}
-                                            className={cn(
-                                                "w-1.5 rounded-full transition-colors duration-500",
-                                                status === "listening" ? "bg-primary" :
-                                                    status === "speaking" ? "bg-green-500" :
-                                                        "bg-border"
-                                            )}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        size="lg"
-                                        className={cn(
-                                            "h-16 w-16 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105",
-                                            isActive ? "bg-red-500 hover:bg-red-600 shadow-red-500/20" : "bg-primary hover:bg-primary/90 shadow-primary/20"
-                                        )}
-                                        onClick={toggleSession}
-                                    >
-                                        {isActive ? <Square className="h-7 w-7 fill-white" /> : <Mic className="h-8 w-8 text-primary-foreground" />}
-                                    </Button>
-
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-foreground uppercase tracking-widest leading-none mb-1">
-                                            {status === "idle" ? "Standby" :
-                                                status === "listening" ? "Listening..." :
-                                                    status === "thinking" ? "Thinking..." : "Speaking"}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground font-mono uppercase">
-                                            {isActive ? "Audio stream active" : "Press to start"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
+            <div className="relative flex flex-col items-center justify-center h-[calc(100vh-100px)] p-6 overflow-hidden">
+                {/* Background Decor */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
                 </div>
 
+                {/* Status Badge */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-8"
+                >
+                    <Badge variant="outline" className="px-4 py-1.5 bg-muted/50 border-primary/20 backdrop-blur-md text-primary tracking-widest uppercase text-[10px] font-bold">
+                        {status === "idle" ? "Connection Ready" :
+                            status === "listening" ? "Listening to You" :
+                                status === "thinking" ? "Nebula is Thinking" : "Nebula is Speaking"}
+                    </Badge>
+                </motion.div>
 
-                <div className="w-[380px] flex flex-col gap-6">
-                    <Card className="glass border-border p-6 space-y-4">
-                        <h3 className="font-bold text-foreground flex items-center gap-2">
-                            <Cpu className="h-4 w-4 text-primary" />
-                            Dynamic Context
-                        </h3>
-                        <p className="text-xs text-muted-foreground">Update the agent's persona or knowledge base mid-session.</p>
-                        <Separator className="bg-border" />
+                {/* Main Orb Focal Point */}
+                <div className="flex flex-col items-center gap-12">
+                    <VoiceOrb status={status} volume={volume} />
 
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-mono text-muted-foreground uppercase">Current Persona</label>
-                                <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm text-foreground italic">
-                                    "You are a helpful technical assistant specialized in Next.js and high-performance Web APIs."
-                                </div>
-                            </div>
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <motion.h1
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-4xl font-bold tracking-tight text-foreground"
+                        >
+                            {status === "idle" ? "Nebula AI" : "How can I help you?"}
+                        </motion.h1>
+                        <p className="text-sm text-muted-foreground max-w-sm uppercase tracking-[0.2em] font-mono">
+                            {isActive ? "Voice interface active" : "Session disconnected"}
+                        </p>
+                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-mono text-muted-foreground uppercase">Knowledge Base Update</label>
-                                <textarea
-                                    className="w-full h-32 rounded-lg bg-background border border-border p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
-                                    placeholder="Paste new context or instructions here..."
-                                />
-                            </div>
+                    <Button
+                        size="lg"
+                        className={cn(
+                            "h-20 w-20 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110",
+                            isActive ? "bg-red-500/20 text-red-500 border-red-500/50 hover:bg-red-500/30" : "bg-primary text-primary-foreground"
+                        )}
+                        onClick={toggleSession}
+                    >
+                        {isActive ? <Square className="h-8 w-8 fill-current" /> : <Mic className="h-10 w-10" />}
+                    </Button>
+                </div>
 
-                            <Button className="w-full bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30">
-                                Push Update
-                            </Button>
-                        </div>
-                    </Card>
-
-                    <Card className="flex-1 glass border-border p-6 flex flex-col">
-                        <h3 className="font-bold text-foreground flex items-center gap-2 mb-6">
-                            <Zap className="h-4 w-4 text-yellow-400" />
-                            Pipeline Metrics
-                        </h3>
-
-                        <div className="space-y-6">
-                            <MetricItem label="VAD Detection" value="24ms" progress={20} />
-                            <MetricItem label="STT (Deepgram)" value="156ms" progress={45} />
-                            <MetricItem label="LLM (Groq)" value="280ms" progress={60} />
-                            <MetricItem label="TTS (Cartesia)" value="92ms" progress={30} />
-                            <MetricItem label="Total E2E" value="552ms" progress={40} color="bg-primary" />
-                        </div>
-                    </Card>
+                {/* Metrics Overlay */}
+                <div className="absolute bottom-8 left-8 right-8 grid grid-cols-4 gap-4 max-w-4xl mx-auto">
+                    <MetricCard icon={Activity} label="Latency" value={stats.latency} color="text-green-500" />
+                    <MetricCard icon={Zap} label="Response" value={stats.turnTime} color="text-yellow-500" />
+                    <MetricCard icon={Cpu} label="System" value="Active" color="text-blue-500" />
+                    <MetricCard icon={Globe} label="Access" value="Neural" color="text-cyan-500" />
                 </div>
             </div>
         </DashboardLayout>
     );
 }
 
-function MetricCard({ icon: Icon, label, value, trend, color }) {
+function MetricCard({ icon: Icon, label, value, color }) {
     return (
-        <Card className="glass border-border p-4 flex items-center gap-4">
-            <div className={cn("p-2 rounded-lg bg-muted/50", color)}>
-                <Icon className="h-5 w-5" />
+        <Card className="glass border-border/50 bg-background/20 backdrop-blur-sm p-4 flex items-center gap-4">
+            <div className={cn("p-2 rounded-lg bg-muted/20", color)}>
+                <Icon className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
                 <span className="text-[10px] text-muted-foreground uppercase font-mono">{label}</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-foreground">{value}</span>
-                    {trend && <span className={cn("text-[10px] font-mono", trend.startsWith('-') ? "text-green-400" : "text-red-400")}>{trend}</span>}
-                </div>
+                <span className="text-sm font-bold text-foreground">{value}</span>
             </div>
         </Card>
     );
 }
 
-function MetricItem({ label, value, progress, color = "bg-muted/20" }) {
+function Badge({ children, className, variant }) {
     return (
-        <div className="space-y-2">
-            <div className="flex justify-between text-xs font-mono">
-                <span className="text-muted-foreground uppercase">{label}</span>
-                <span className="text-foreground font-bold">{value}</span>
-            </div>
-            <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    className={cn("h-full rounded-full", color)}
-                />
-            </div>
-        </div>
+        <span className={cn(
+            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            variant === "outline" ? "text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/80",
+            className
+        )}>
+            {children}
+        </span>
     );
 }
-
