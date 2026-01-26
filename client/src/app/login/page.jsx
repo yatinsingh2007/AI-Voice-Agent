@@ -6,12 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mic, ArrowLeft } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
 import { ThemeContext } from "@/context/ThemeContext"
 import Link from "next/link";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+    const { login: authLogin } = useContext(AuthContext);
     const { theme } = useContext(ThemeContext);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -24,19 +26,13 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
         try {
-            // FastAPI OAuth2PasswordRequestForm expects form-data
-            const formData = new FormData();
-            formData.append("username", email);
-            formData.append("password", password);
-
-            const resp = await axios.post("http://localhost:8000/api/v1/auth/login", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+            const resp = await axios.post("http://localhost:8000/api/v1/auth/login", {
+                email,
+                password
             });
 
             if (resp.data.access_token) {
-                localStorage.setItem("token", resp.data.access_token);
+                authLogin(resp.data.access_token, { email }); // Update global state
                 router.push("/dashboard");
             }
         } catch (err) {

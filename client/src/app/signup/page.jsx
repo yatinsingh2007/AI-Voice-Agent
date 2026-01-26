@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react"
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,8 +8,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mic, CheckCircle2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+            const resp = await axios.post("http://localhost:8000/api/v1/auth/signup", {
+                name,
+                email,
+                password
+            });
+
+            if (resp.data.id) {
+                // After signup, we could auto-login or redirect to login
+                // Let's redirect to login for simplicity, or just show success
+                router.push("/login");
+            }
+        } catch (err) {
+            console.error("Signup failed:", err);
+            setError(err.response?.data?.detail || "Signup failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
             <Link
@@ -36,39 +70,59 @@ export default function SignupPage() {
                 </div>
 
                 <Card className="glass border-border p-8 space-y-6">
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name" className="text-muted-foreground">Full Name</Label>
-                            <Input
-                                id="name"
-                                placeholder="John Doe"
-                                className="bg-background/50 border-border text-foreground focus:ring-primary"
-                            />
+                    <form onSubmit={handleSignup} className="space-y-6">
+                        {error && (
+                            <div className="text-sm text-red-500 bg-red-500/10 p-2 rounded border border-red-500/20">
+                                {error}
+                            </div>
+                        )}
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name" className="text-muted-foreground">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="John Doe"
+                                    className="bg-background/50 border-border text-foreground focus:ring-primary"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-muted-foreground">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    className="bg-background/50 border-border text-foreground focus:ring-primary"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password" className="text-muted-foreground">Create Password</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    className="bg-background/50 border-border text-foreground focus:ring-primary"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-muted-foreground">Email Address</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="name@example.com"
-                                className="bg-background/50 border-border text-foreground focus:ring-primary"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="password" className="text-muted-foreground">Create Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                className="bg-background/50 border-border text-foreground focus:ring-primary"
-                            />
-                        </div>
-                    </div>
-
-                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/20">
-                        Create Account
-                    </Button>
+                        <Button
+                            className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/20"
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? "Creating Account..." : "Create Account"}
+                        </Button>
+                    </form>
 
                     <div className="space-y-4 pt-4">
                         <div className="flex items-start gap-2">

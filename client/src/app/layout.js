@@ -18,17 +18,20 @@ export const metadata = {
 };
 
 import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({ children }) {
   return (
-    <ThemeProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
-        >
-          {children}
-        </body>
-      </html>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body
+            className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+          >
+            {children}
+          </body>
+        </html>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

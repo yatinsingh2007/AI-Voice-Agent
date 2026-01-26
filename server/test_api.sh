@@ -23,9 +23,11 @@ echo "Signup Response: $SIGNUP_RESPONSE"
 # 2. Login
 echo -e "\nStep 2: Login"
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
-  -H "Content-Type: multipart/form-data" \
-  -F "username=$EMAIL" \
-  -F "password=$PASSWORD")
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"$EMAIL\",
+    \"password\": \"$PASSWORD\"
+  }")
 
 echo "Login Response: $LOGIN_RESPONSE"
 

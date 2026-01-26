@@ -5,13 +5,14 @@ import edge_tts
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 from app.api import deps
+from app.services.agent import agent_service
 
 router = APIRouter()
 
 VOICE = "en-US-AndrewNeural"
 
 async def generate_welcome_audio(text: str) -> bytes:
-    communicate = edge_tts.Communicate(text, VOICE)
+    communicate = edge_tts.Communicate(text, VOICE, rate="-10%")
     audio_data = b""
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
@@ -48,62 +49,110 @@ def get_voice_status(db: Session = Depends(deps.get_db)):
 @router.websocket("/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    print("Websocket connection accepted")
     
+    speaking_task = None
+    is_ai_speaking = False
+
+    async def speak_text(text: str):
+        nonlocal is_ai_speaking
+        is_ai_speaking = True
+        print(f"Starting to speak: {text[:50]}...")
+        try:
+            await websocket.send_json({"type": "status", "status": "speaking"})
+            communicate = edge_tts.Communicate(text, VOICE)
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    await websocket.send_bytes(chunk["data"])
+        except Exception as e:
+            print(f"Error in speak_text: {e}")
+        finally:
+            is_ai_speaking = False
+            await websocket.send_json({"type": "status", "status": "listening"})
+            print("Finished speaking, set status to listening")
+
     # 1. Initial Auto-Greeting
     try:
-        await websocket.send_json({"type": "status", "status": "speaking"})
-        
-        # Generate actual greeting audio
-        welcome_text = "Welcome to Nebula AI. Your voice-powered assistant is now ready."
-        audio_bytes = await generate_welcome_audio(welcome_text)
-        
-        # Send audio in chunks to simulate streaming if needed, 
-        # or just send the whole thing. Most clients expect chunks.
-        chunk_size = 4096
-        for i in range(0, len(audio_bytes), chunk_size):
-            await websocket.send_bytes(audio_bytes[i:i + chunk_size])
-            await asyncio.sleep(0.01) # Small delay to prevent overwhelming
-        
-        await websocket.send_json({"type": "status", "status": "listening"})
+        greeting = "Welcome to Nebula AI. Your agentic assistant is ready. How can I help you today?"
+        print("Creating greeting task")
+        speaking_task = asyncio.create_task(speak_text(greeting))
     except Exception as e:
         print(f"Error during greeting: {e}")
-        return
 
     chunk_count = 0
+    total_amplitude = 0
+    silence_counter = 0
+    is_actively_speaking = False
+    
     try:
         while True:
-            # Receive raw PCM chunk from client
             data = await websocket.receive_bytes()
             
-            # Clean the audio chunk
-            cleaned_data = clean_audio(data)
-            
-            chunk_count += 1
-            
-            # Send status/metrics back
-            await websocket.send_json({
-                "type": "status",
-                "metrics": {"vad": 5, "stt": 80}
-            })
+            # Simple VAD / Interruption
+            if len(data) >= 2:
+                fmt = f"<{len(data)//2}h"
+                samples = struct.unpack(fmt, data)
+                avg_amp = sum(abs(s) for s in samples) / len(samples)
+                
+                # If AI is speaking and user speaks loudly, interrupt
+                if is_ai_speaking and avg_amp > 800:
+                    if speaking_task and not speaking_task.done():
+                        speaking_task.cancel()
+                        await websocket.send_json({"type": "status", "status": "interrupted"})
+                        is_ai_speaking = False
+                
+                # Signal tracking for end-of-speech detection
+                if avg_amp > 800: # Increased threshold further to ignore high background noise
+                    is_actively_speaking = True
+                    silence_counter = 0
+                    chunk_count += 1
+                else:
+                    if is_actively_speaking:
+                        silence_counter += 1
+                
+                total_amplitude += avg_amp
 
-            # Simulate "turn-based" response logic (Simple Echo or Mock)
-            if chunk_count == 12:
-                await websocket.send_json({"type": "status", "status": "thinking"})
-                await asyncio.sleep(0.8)
+            # ~4 chunks is approx 1 second
+            # Safety Trigger: Force trigger if user has been speaking for > 6 seconds (approx 25 chunks)
+            # OR if we detect 1 second of "silence" relative to our higher threshold.
+            if is_actively_speaking and not is_ai_speaking:
+                should_trigger = (silence_counter >= 4) or (chunk_count >= 25)
                 
-                await websocket.send_json({"type": "status", "status": "speaking"})
-                
-                # Mock response audio
-                resp_text = "I heard you. How can I assist you further?"
-                resp_audio = await generate_welcome_audio(resp_text)
-                for i in range(0, len(resp_audio), chunk_size):
-                    await websocket.send_bytes(resp_audio[i:i + chunk_size])
-                    await asyncio.sleep(0.01)
-                
-                await websocket.send_json({"type": "status", "status": "listening"})
-                chunk_count = 0 
+                if should_trigger:
+                    print(f"Triggering Agent. Silence: {silence_counter}, Duration: {chunk_count}")
+                    if speaking_task and not speaking_task.done():
+                        speaking_task.cancel()
+
+                    await websocket.send_json({"type": "status", "status": "thinking"})
+                    
+                    # Mock query logic
+                    if total_amplitude / (max(1, chunk_count)) > 1500:
+                        mock_query = "What is the latest news about Delhi today? SEARCH: Delhi News"
+                    else:
+                        mock_query = "Tell me something cool that happened recently."
+                    
+                    try:
+                        async for event in agent_service.process_query(mock_query):
+                            if event["type"] == "status":
+                                await websocket.send_json({"type": "status", "status": "searching", "detail": event["content"]})
+                            elif event["type"] == "search_results":
+                                await websocket.send_json({"type": "search", "results": event["content"]})
+                            elif event["type"] == "answer":
+                                speaking_task = asyncio.create_task(speak_text(event["content"]))
+                            elif event["type"] == "error":
+                                await websocket.send_json({"type": "error", "message": event["content"]})
+                    except Exception as e:
+                        print(f"Process query failed: {e}")
+                        await websocket.send_json({"type": "error", "message": str(e)})
+                    
+                    # Reset counters
+                    is_actively_speaking = False
+                    silence_counter = 0
+                    chunk_count = 0 
+                    total_amplitude = 0
                 
     except WebSocketDisconnect:
+        if speaking_task: speaking_task.cancel()
         print("Nebula disconnected")
     except Exception as e:
         print(f"WS Error: {e}")

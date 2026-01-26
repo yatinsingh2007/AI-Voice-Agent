@@ -1,0 +1,203 @@
+INFO:     Will watch for changes in these directories: ['/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12675] using WatchFiles
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [12751]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:53148 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+INFO:     127.0.0.1:53149 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Finished speaking, set status to listening
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+Nebula disconnected
+Nebula disconnected
+INFO:     connection closed
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12751]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [13032]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54855 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:54897 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:54968 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:56215 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:56241 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:56288 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:56364 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:56397 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+INFO:     connection open
+Creating greeting task
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+Nebula disconnected
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13032]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [13168]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:58385 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:58535 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+INFO:     127.0.0.1:58607 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13168]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [13435]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59282 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13435]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [13466]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59855 - "WebSocket /api/v1/voice/stream" [accepted]
+Websocket connection accepted
+Creating greeting task
+INFO:     connection open
+Starting to speak: Welcome to Nebula AI. Your agentic assistant is re...
+Finished speaking, set status to listening
+Nebula disconnected
+INFO:     connection closed
