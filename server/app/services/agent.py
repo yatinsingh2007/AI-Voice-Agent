@@ -9,15 +9,19 @@ class AgentService:
     def __init__(self):
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.tavily_key = os.getenv("TAVILY_API_KEY")
+        self.mock_mode = os.getenv("MOCK_MODE", "false").lower() == "true"
         
-        if self.gemini_key:
+        if self.gemini_key and not self.mock_mode:
             genai.configure(api_key=self.gemini_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-flash-latest')
         
-        self.tavily = TavilyClient(api_key=self.tavily_key) if self.tavily_key else None
+        self.tavily = TavilyClient(api_key=self.tavily_key) if (self.tavily_key and not self.mock_mode) else None
 
     def search_web(self, query: str) -> str:
-        """Perform a web search using Tavily."""
+        """Perform a web search."""
+        if self.mock_mode:
+            return f"Mock search results for: {query}. (Tavily bypassed in MOCK_MODE)"
+            
         if not self.tavily:
             return "Search tool not configured. Please add TAVILY_API_KEY."
         
@@ -31,7 +35,21 @@ class AgentService:
             return f"Search failed: {str(e)}"
 
     async def process_query(self, query: str, history: List[Dict] = []) -> Generator[Dict[str, Any], None, None]:
-        """Process user query with tool-use reasoning."""
+        """Process user query."""
+        if self.mock_mode:
+            # Simulate a search-capable agent
+            if "weather" in query.lower() or "news" in query.lower() or "capital" in query.lower():
+                yield {"type": "status", "content": f"Searching the web for: {query}"}
+                await asyncio.sleep(1.5)
+                results = self.search_web(query)
+                yield {"type": "search_results", "content": results}
+                await asyncio.sleep(1.0)
+                yield {"type": "answer", "content": f"In MOCK_MODE, I found that: {query}. The CAPITAL is Paris and it's sunny!"}
+            else:
+                await asyncio.sleep(0.8)
+                yield {"type": "answer", "content": "I am currently running in MOCK_MODE because you've hit your Gemini API limit. I can still show you how I work!"}
+            return
+
         if not self.gemini_key:
             yield {"type": "error", "content": "Gemini API key not configured."}
             return
@@ -39,10 +57,11 @@ class AgentService:
         # System prompt for the agent
         system_instructions = (
             "You are Nebula, an advanced Agentic AI voice assistant. "
-            "You have access to a web search tool. If a question requires up-to-date information, "
-            "use the tool. Be concise in your voice responses. If you use search, "
-            "explain what you are looking for briefly. "
-            "IMPORTANT: If you decide to search, start your response with 'SEARCH: [query]'."
+            "You have a web search tool. USE IT SELECTIVELY. "
+            "- If a user asks for 'current weather', 'latest news', or 'live data', use it. "
+            "- For greetings, common knowledge (e.g., 'What is the capital of France?'), or general facts, DO NOT use search. Respond from memory. "
+            "IF you decide to search, start your response with 'SEARCH: [query]'. Otherwise, just speak the answer. "
+            "Be very concise in your voice responses."
         )
 
         chat = self.model.start_chat(history=history)

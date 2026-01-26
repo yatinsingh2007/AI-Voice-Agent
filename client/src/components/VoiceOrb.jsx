@@ -24,8 +24,8 @@ const VoiceOrb = ({ status, volume }) => {
             background: "radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(124, 58, 237, 0) 70%)",
         },
         speaking: {
-            scale: [1, 1.1, 1],
-            transition: { duration: 0.5, repeat: Infinity, ease: "easeInOut" },
+            scale: scale,
+            transition: { type: "spring", stiffness: 300, damping: 20 },
             background: "radial-gradient(circle, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0) 70%)",
         }
     };

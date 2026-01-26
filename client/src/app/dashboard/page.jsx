@@ -17,6 +17,7 @@ export default function DashboardPage() {
     const [stats, setStats] = useState({ latency: "0ms", turnTime: "0.0s" });
     const [volume, setVolume] = useState(0);
     const [isGreetingFinished, setIsGreetingFinished] = useState(false);
+    const [displayedStatus, setDisplayedStatus] = useState("idle");
 
     const socketRef = useRef(null);
     const audioContextRef = useRef(null);
@@ -136,23 +137,39 @@ export default function DashboardPage() {
         }
     };
 
+    const isAiSpeakingRef = useRef(false);
+
+    useEffect(() => {
+        // Sync ref with status for use in event listeners
+        isAiSpeakingRef.current = (status === "speaking" || displayedStatus === "speaking");
+    }, [status, displayedStatus]);
+
     const activateMic = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             micStreamRef.current = stream;
 
+            // Ensure worklet is loaded
+            try {
+                await audioContextRef.current.audioWorklet.addModule('/audio-processor.js');
+            } catch (e) {
+                console.debug("Worklet already loaded or failed:", e);
+            }
+
             const source = audioContextRef.current.createMediaStreamSource(stream);
-            const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+            const workletNode = new AudioWorkletNode(audioContextRef.current, 'pcm-processor');
 
-            // Connect mic to the SAME persistent analyser for visualization
-            // But NOT to the destination, to avoid echo
             source.connect(analyserRef.current);
-            source.connect(processor);
-            // processor.connect(audioContextRef.current.destination); // REMOVED to stop echo
+            source.connect(workletNode);
+            workletNode.connect(audioContextRef.current.destination);
 
-            processor.onaudioprocess = (e) => {
+            workletNode.port.onmessage = (event) => {
+                // Software Echo Cancellation (Gate) REMOVED to allow VAD Interruption
+                // We now send audio continuously so the backend can detect "Barge In"
+                // if (isAiSpeakingRef.current) return;
+
                 if (socketRef.current?.readyState === WebSocket.OPEN) {
-                    const inputData = e.inputBuffer.getChannelData(0);
+                    const inputData = event.data;
                     const pcmData = new Int16Array(inputData.length);
                     for (let i = 0; i < inputData.length; i++) {
                         const s = Math.max(-1, Math.min(1, inputData[i]));
@@ -182,10 +199,26 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
-        if (isGreetingFinished && isActive && !micStreamRef.current) {
+        if (status === "speaking") {
+            setDisplayedStatus("speaking");
+        } else if (status === "listening") {
+            // Buffer sync: Delay visual switch to listening 
+            // to allow browser audio buffer to drain
+            const timer = setTimeout(() => {
+                setDisplayedStatus("listening");
+                if (!isGreetingFinished) setIsGreetingFinished(true);
+            }, 800);
+            return () => clearTimeout(timer);
+        } else {
+            setDisplayedStatus(status);
+        }
+    }, [status, isGreetingFinished]);
+
+    useEffect(() => {
+        if (isGreetingFinished && isActive && !micStreamRef.current && displayedStatus === "listening") {
             activateMic();
         }
-    }, [isGreetingFinished, isActive]);
+    }, [isGreetingFinished, isActive, displayedStatus]);
 
     const updateVolume = () => {
         if (analyserRef.current) {
@@ -225,10 +258,6 @@ export default function DashboardPage() {
                         if (data.status === "interrupted") {
                             stopAudio();
                             setStatus("listening");
-                        }
-                        // Restore isGreetingFinished to trigger mic activation
-                        if (data.status === "listening" && !isGreetingFinished) {
-                            setIsGreetingFinished(true);
                         }
                     }
                     if (data.detail) setStatusDetail(data.detail);
@@ -279,15 +308,15 @@ export default function DashboardPage() {
                         className="z-10 mb-8"
                     >
                         <Badge variant="outline" className="px-3 py-1 md:px-4 md:py-1.5 bg-muted/50 border-primary/20 backdrop-blur-md text-primary tracking-widest uppercase text-[8px] md:text-[10px] font-bold">
-                            {status === "idle" ? "Connection Ready" :
-                                status === "listening" ? "Listening to You" :
-                                    status === "thinking" ? "Nebula is Thinking" :
-                                        status === "searching" ? `Searching: ${statusDetail}` : "Nebula is Speaking"}
+                            {displayedStatus === "idle" ? "Connection Ready" :
+                                displayedStatus === "listening" ? "Listening to You" :
+                                    displayedStatus === "thinking" ? "Nebula is Thinking" :
+                                        displayedStatus === "searching" ? `Searching: ${statusDetail}` : "Nebula is Speaking"}
                         </Badge>
                     </motion.div>
 
                     <div className="flex flex-col items-center gap-6 md:gap-12 w-full max-w-lg z-10">
-                        <VoiceOrb status={status} volume={volume} />
+                        <VoiceOrb status={displayedStatus} volume={volume} />
 
                         <div className="flex flex-col items-center gap-2 md:gap-4 text-center px-4">
                             <motion.h1
@@ -295,8 +324,8 @@ export default function DashboardPage() {
                                 animate={{ opacity: 1 }}
                                 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground"
                             >
-                                {status === "idle" ? "Nebula AI" :
-                                    status === "searching" ? "Browsing Web..." : "How can I help you?"}
+                                {displayedStatus === "idle" ? "Nebula AI" :
+                                    displayedStatus === "searching" ? "Browsing Web..." : "How can I help you?"}
                             </motion.h1>
                             <p className="text-xs md:text-sm text-muted-foreground max-w-sm uppercase tracking-[0.2em] font-mono">
                                 {isActive ? "Voice interface active" : "Session disconnected"}

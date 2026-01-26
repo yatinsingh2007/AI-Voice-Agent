@@ -1,6 +1,7 @@
 import struct
 import asyncio
 import io
+import random
 import edge_tts
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ def clean_audio(data: bytes) -> bytes:
         return data # Fallback if data is malformed
 
     # Noise gate: zero out samples below a threshold
-    threshold = 300 
+    threshold = 800 # Increased from 300 to better handle background noise
     cleaned = [s if abs(s) > threshold else 0 for s in samples]
     
     # Pack back to bytes
@@ -83,26 +84,31 @@ async def websocket_endpoint(websocket: WebSocket):
     total_amplitude = 0
     silence_counter = 0
     is_actively_speaking = False
+    last_trigger_time = 0
     
     try:
         while True:
-            data = await websocket.receive_bytes()
+            raw_data = await websocket.receive_bytes()
+            
+            # 2. Audio Cleaning (Noise Gate)
+            data = clean_audio(raw_data)
             
             # Simple VAD / Interruption
             if len(data) >= 2:
                 fmt = f"<{len(data)//2}h"
                 samples = struct.unpack(fmt, data)
+                # Calculate amplitude on cleaned data
                 avg_amp = sum(abs(s) for s in samples) / len(samples)
                 
                 # If AI is speaking and user speaks loudly, interrupt
-                if is_ai_speaking and avg_amp > 800:
+                if is_ai_speaking and avg_amp > 1000:
                     if speaking_task and not speaking_task.done():
                         speaking_task.cancel()
                         await websocket.send_json({"type": "status", "status": "interrupted"})
                         is_ai_speaking = False
                 
                 # Signal tracking for end-of-speech detection
-                if avg_amp > 800: # Increased threshold further to ignore high background noise
+                if avg_amp > 600: # Lowered from 1200 to 600 to match normal speech volume
                     is_actively_speaking = True
                     silence_counter = 0
                     chunk_count += 1
@@ -111,45 +117,77 @@ async def websocket_endpoint(websocket: WebSocket):
                         silence_counter += 1
                 
                 total_amplitude += avg_amp
-
-            # ~4 chunks is approx 1 second
-            # Safety Trigger: Force trigger if user has been speaking for > 6 seconds (approx 25 chunks)
-            # OR if we detect 1 second of "silence" relative to our higher threshold.
-            if is_actively_speaking and not is_ai_speaking:
-                should_trigger = (silence_counter >= 4) or (chunk_count >= 25)
                 
-                if should_trigger:
-                    print(f"Triggering Agent. Silence: {silence_counter}, Duration: {chunk_count}")
-                    if speaking_task and not speaking_task.done():
-                        speaking_task.cancel()
+                # Debug log every 50 chunks to verify mic input level
+                if chunk_count % 50 == 1:
+                    print(f"Mic Level: {avg_amp:.2f}")
 
-                    await websocket.send_json({"type": "status", "status": "thinking"})
+            # ~6 chunks is approx 1.5s - balanced response
+            # Safety Trigger: Force trigger if user has been speaking for > 15 seconds
+            current_time = asyncio.get_event_loop().time()
+            cooldown_period = 5.0 # Reduced from 10s to 5s for better UX
+            
+            if is_actively_speaking and not is_ai_speaking:
+                # Only trigger if we are past the cooldown
+                if current_time - last_trigger_time > cooldown_period:
+                    should_trigger = (silence_counter >= 6) or (chunk_count >= 60)
                     
-                    # Mock query logic
-                    if total_amplitude / (max(1, chunk_count)) > 1500:
-                        mock_query = "What is the latest news about Delhi today? SEARCH: Delhi News"
-                    else:
-                        mock_query = "Tell me something cool that happened recently."
-                    
-                    try:
-                        async for event in agent_service.process_query(mock_query):
-                            if event["type"] == "status":
-                                await websocket.send_json({"type": "status", "status": "searching", "detail": event["content"]})
-                            elif event["type"] == "search_results":
-                                await websocket.send_json({"type": "search", "results": event["content"]})
-                            elif event["type"] == "answer":
-                                speaking_task = asyncio.create_task(speak_text(event["content"]))
-                            elif event["type"] == "error":
-                                await websocket.send_json({"type": "error", "message": event["content"]})
-                    except Exception as e:
-                        print(f"Process query failed: {e}")
-                        await websocket.send_json({"type": "error", "message": str(e)})
-                    
-                    # Reset counters
-                    is_actively_speaking = False
-                    silence_counter = 0
-                    chunk_count = 0 
-                    total_amplitude = 0
+                    if should_trigger:
+                        # Ensure we actually have meaningful audio data (not just a short pop)
+                        avg_signal = total_amplitude / (max(1, chunk_count))
+                        if avg_signal > 1500 or chunk_count > 10:
+                            print(f"Triggering Agent. Signal={avg_signal:.2f}, Duration={chunk_count}")
+                            last_trigger_time = current_time
+                            
+                            if speaking_task and not speaking_task.done():
+                                speaking_task.cancel()
+
+                            await websocket.send_json({"type": "status", "status": "thinking"})
+                            
+                            # More natural mock queries (AgentService will now decide if search is needed)
+                            if avg_signal > 2000:
+                                options = [
+                                    "What is the capital of France and what is the weather there right now?",
+                                    "Search for the latest technology news headlines.",
+                                    "Who acts as Iron Man in the Marvel movies?",
+                                    "What is the current stock price of Google?"
+                                ]
+                                mock_query = random.choice(options)
+                            else:
+                                options = [
+                                    "Hello Nebula! Tell me a fun fact about space.",
+                                    "Tell me a short joke.",
+                                    "How are you doing today?",
+                                    "What is the meaning of life?"
+                                ]
+                                mock_query = random.choice(options)
+                            
+                            try:
+                                async for event in agent_service.process_query(mock_query):
+                                    if event["type"] == "status":
+                                        await websocket.send_json({"type": "status", "status": "searching", "detail": event["content"]})
+                                    elif event["type"] == "search_results":
+                                        await websocket.send_json({"type": "search", "results": event["content"]})
+                                    elif event["type"] == "answer":
+                                        speaking_task = asyncio.create_task(speak_text(event["content"]))
+                                    elif event["type"] == "error":
+                                        await websocket.send_json({"type": "error", "message": event["content"]})
+                            except Exception as e:
+                                print(f"Process query failed: {e}")
+                                await websocket.send_json({"type": "error", "message": str(e)})
+                        
+                        # Reset counters (Always reset on trigger attempt)
+                        is_actively_speaking = False
+                        silence_counter = 0
+                        chunk_count = 0 
+                        total_amplitude = 0
+                else:
+                    # In cooldown, just reset counters if silence is detected to prevent immediate trigger after cooldown
+                    if silence_counter >= 6:
+                        is_actively_speaking = False
+                        silence_counter = 0
+                        chunk_count = 0
+                        total_amplitude = 0
                 
     except WebSocketDisconnect:
         if speaking_task: speaking_task.cancel()
