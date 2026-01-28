@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mic, Search, Settings, MessageSquare, BarChart3, Cloud, User, LogOut, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-react";
+import { Mic, Search, Settings, MessageSquare, BarChart3, Cloud, User, LogOut, PanelLeftClose, PanelLeftOpen, Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +19,32 @@ export default function DashboardLayout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [recentConversations, setRecentConversations] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    useEffect(() => {
+        const fetchRecent = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            setLoadingHistory(true);
+            try {
+                const resp = await fetch("http://localhost:8000/api/v1/voice/history", {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await resp.json();
+                setRecentConversations(data.slice(0, 5));
+            } catch (err) {
+                console.error("Failed to fetch recent history:", err);
+            } finally {
+                setLoadingHistory(false);
+            }
+        };
+
+        if (isAuthenticated) {
+            fetchRecent();
+        }
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -65,11 +91,50 @@ export default function DashboardLayout({ children }) {
                 </div>
             </div>
 
-            <div className="flex-1 space-y-2 p-4 overflow-y-auto">
-                <NavItem icon={MessageSquare} label="Conversations" active collapsed={collapsed} />
-                <NavItem icon={BarChart3} label="Observability" collapsed={collapsed} />
-                <NavItem icon={Search} label="Search History" collapsed={collapsed} />
-                <NavItem icon={Cloud} label="Integrations" collapsed={collapsed} />
+            <div className="flex flex-col flex-1 gap-2 p-4 overflow-y-auto scrollbar-hide">
+                <Button
+                    variant="default"
+                    className={cn(
+                        "w-full justify-start gap-3 rounded-xl py-6 mb-2 shadow-lg shadow-primary/20",
+                        collapsed ? "px-0 justify-center" : "px-4"
+                    )}
+                    onClick={() => window.location.href = "/dashboard"}
+                >
+                    <Sparkles className="h-5 w-5" />
+                    {!collapsed && <span className="font-bold">New Intelligence</span>}
+                </Button>
+
+                <NavItem icon={Mic} label="Assistant" href="/dashboard" collapsed={collapsed} />
+                <NavItem icon={MessageSquare} label="Conversations" href="/dashboard/conversations" collapsed={collapsed} />
+
+                {(!collapsed || isMobileOpen) && (
+                    <div className="mt-8 space-y-4">
+                        <div className="px-3 flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">Recent Intelligence</span>
+                        </div>
+                        <div className="space-y-1">
+                            {recentConversations.map((conv) => (
+                                <Link
+                                    key={conv.id}
+                                    href={`/dashboard?id=${conv.id}`}
+                                    className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all truncate group"
+                                >
+                                    <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-40 group-hover:opacity-100" />
+                                    <span className="truncate">{conv.title || "Voice Session"}</span>
+                                </Link>
+                            ))}
+                            {recentConversations.length === 0 && !loadingHistory && (
+                                <p className="px-3 text-[10px] text-muted-foreground/40 italic">No recent sessions</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-8">
+                    <NavItem icon={BarChart3} label="Observability" href="#" collapsed={collapsed} />
+                    <NavItem icon={Search} label="Search History" href="#" collapsed={collapsed} />
+                    <NavItem icon={Cloud} label="Integrations" href="#" collapsed={collapsed} />
+                </div>
             </div>
 
             <div className="p-4 space-y-4">
@@ -92,13 +157,13 @@ export default function DashboardLayout({ children }) {
 
                 <div className={cn("flex items-center gap-3 p-3", collapsed ? "md:justify-center" : "")}>
                     <Avatar className="h-9 w-9 border border-border">
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>JD</AvatarFallback>
+                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}`} />
+                        <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AI"}</AvatarFallback>
                     </Avatar>
                     {(!collapsed || isMobileOpen) && (
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium">John Doe</span>
-                            <span className="text-xs text-muted-foreground">Free Plan</span>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-medium truncate">{user?.name || "User"}</span>
+                            <span className="text-xs text-muted-foreground truncate">{user?.email || "Free Plan"}</span>
                         </div>
                     )}
                 </div>
@@ -172,12 +237,16 @@ export default function DashboardLayout({ children }) {
     );
 }
 
-function NavItem({ icon: Icon, label, active = false, collapsed = false }) {
+function NavItem({ icon: Icon, label, href = "#", active = false, collapsed = false }) {
+    const router = useRouter();
+    const isActive = active || (typeof window !== 'undefined' && window.location.pathname === href);
+
     return (
-        <button
+        <Link
+            href={href}
             className={cn(
                 "flex w-full items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all",
-                active
+                isActive
                     ? "bg-primary/10 text-primary shadow-[inset_0_0_12px_rgba(59,130,246,0.1)] border border-primary/20"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent",
                 collapsed ? "justify-center" : ""
@@ -185,6 +254,6 @@ function NavItem({ icon: Icon, label, active = false, collapsed = false }) {
         >
             <Icon className="h-5 w-5" />
             {!collapsed && <span>{label}</span>}
-        </button>
+        </Link>
     );
 }

@@ -5,15 +5,20 @@ import DashboardLayout from "./DashboardLayout";
 import VoiceOrb from "@/components/VoiceOrb";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, Square, Activity, Clock, Cpu, Globe, Zap, Download, Sparkles, MessageSquare, ShieldCheck } from "lucide-react";
+import { Mic, Square, Activity, Clock, Cpu, Globe, Zap, Download, Sparkles, MessageSquare, ShieldCheck, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+import { useSearchParams } from "next/navigation";
+
 export default function DashboardPage() {
+    const searchParams = useSearchParams();
+    const conversationId = searchParams.get("id");
+
     const [isActive, setIsActive] = useState(false);
     const [status, setStatus] = useState("idle");
     const [statusDetail, setStatusDetail] = useState("");
-    const [searchResults, setSearchResults] = useState("");
+    const [sources, setSources] = useState([]);
     const [stats, setStats] = useState({ latency: "0ms", turnTime: "0.0s" });
     const [volume, setVolume] = useState(0);
     const [isGreetingFinished, setIsGreetingFinished] = useState(false);
@@ -32,7 +37,8 @@ export default function DashboardPage() {
     const audioQueueRef = useRef([]);
     const audioRef = useRef(null);
     const sourceNodeRef = useRef(null);
-    const noiseThreshold = 0.02;
+    const isPlayingRef = useRef(false);
+    const isAiSpeakingRef = useRef(false);
 
     useEffect(() => {
         historyEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,106 +48,140 @@ export default function DashboardPage() {
         setHistory(prev => [...prev, { role, text, timestamp: new Date() }]);
     };
 
+    // Load history if conversationId is provided
+    useEffect(() => {
+        if (conversationId) {
+            const fetchConversation = async () => {
+                try {
+                    const token = localStorage.getItem("token");
+                    const resp = await fetch(`http://localhost:8000/api/v1/voice/history/${conversationId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await resp.json();
+                    if (data.messages) {
+                        const formattedHistory = data.messages.map(m => ({
+                            role: m.role,
+                            text: m.content,
+                            timestamp: new Date(m.created_at)
+                        }));
+                        setHistory(formattedHistory);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch conversation history:", err);
+                }
+            };
+            fetchConversation();
+        } else {
+            setHistory([]);
+        }
+    }, [conversationId]);
+
     const stopAudio = () => {
         if (audioRef.current) {
             audioRef.current.pause();
-        }
-        audioQueueRef.current = [];
-
-
-        if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
-            try {
-                if (sourceBufferRef.current.buffered.length > 0) {
-                    sourceBufferRef.current.remove(0, audioRef.current.duration || 1000000);
-                }
-            } catch (e) {
-                console.debug("SourceBuffer clear error:", e);
+            if (audioRef.current.resetStream) {
+                audioRef.current.resetStream();
             }
         }
+        isPlayingRef.current = false;
     };
 
     useEffect(() => {
         const context = new (window.AudioContext || window.webkitAudioContext)();
         audioContextRef.current = context;
 
-        context.resume().catch(() => console.debug("Autoplay restricted"));
-
         const analyser = context.createAnalyser();
         analyser.fftSize = 256;
-
         analyserRef.current = analyser;
-
-        analyserRef.current = analyser;
-
-        const mediaSource = new MediaSource();
-        mediaSourceRef.current = mediaSource;
 
         const audio = new Audio();
-        audio.src = URL.createObjectURL(mediaSource);
         audioRef.current = audio;
 
-        audioRef.current = audio;
+        // Use a ref for audio context to handle race conditions
+        if (context.state === 'suspended') {
+            const resume = () => {
+                context.resume();
+                window.removeEventListener('click', resume);
+            };
+            window.addEventListener('click', resume);
+        }
 
-        sourceNodeRef.current = context.createMediaElementSource(audio);
-        sourceNodeRef.current.connect(analyser);
-        sourceNodeRef.current.connect(context.destination);
-
-        const handleSourceOpen = () => {
-            try {
-                const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
-                sourceBufferRef.current = sourceBuffer;
-
-                if (audioQueueRef.current.length > 0) {
-                    sourceBuffer.appendBuffer(audioQueueRef.current.shift());
-                }
-
-                sourceBuffer.addEventListener('updateend', () => {
-                    if (audioQueueRef.current.length > 0 && !sourceBuffer.updating) {
-                        const nextChunk = audioQueueRef.current.shift();
-                        if (nextChunk) sourceBuffer.appendBuffer(nextChunk);
-                    }
-                });
-            } catch (e) {
-                console.error("MSE Error:", e);
+        const initMediaSource = () => {
+            if (mediaSourceRef.current) {
+                try {
+                    URL.revokeObjectURL(audio.src);
+                } catch (e) { }
             }
+            const ms = new MediaSource();
+            mediaSourceRef.current = ms;
+            audio.src = URL.createObjectURL(ms);
+
+            ms.addEventListener('sourceopen', () => {
+                if (MediaSource.isTypeSupported('audio/mpeg')) {
+                    const sb = ms.addSourceBuffer('audio/mpeg');
+                    sourceBufferRef.current = sb;
+
+                    sb.addEventListener('updateend', () => {
+                        if (audioQueueRef.current.length > 0 && !sb.updating) {
+                            const chunk = audioQueueRef.current.shift();
+                            try {
+                                sb.appendBuffer(chunk);
+                            } catch (e) {
+                                console.error("SourceBuffer append error:", e);
+                            }
+                        }
+                    });
+                }
+            });
         };
 
-        mediaSource.addEventListener('sourceopen', handleSourceOpen);
-        audio.play().catch(e => console.debug("Interaction required for audio"));
+        // Initialize MediaSource
+        initMediaSource();
+
+        audio.onplay = () => {
+            context.resume();
+        };
+
+        audioRef.current.resetStream = () => {
+            initMediaSource();
+            audioQueueRef.current = [];
+        };
+
+        // Metric update mock (simulating real-time updates)
+        const metricInterval = setInterval(() => {
+            if (isActive) {
+                setStats(prev => ({
+                    latency: `${Math.floor(Math.random() * 50 + 150)}ms`,
+                    turnTime: `${(Math.random() * 0.5 + 1.2).toFixed(1)}s`
+                }));
+            }
+        }, 5000);
 
         updateVolume();
 
         return () => {
-            mediaSource.removeEventListener('sourceopen', handleSourceOpen);
+            clearInterval(metricInterval);
             if (context.state !== 'closed') context.close();
         };
     }, []);
 
-    const playOutputAudio = async (arrayBuffer) => {
-        audioQueueRef.current.push(arrayBuffer);
-
-
-        if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
+    const playOutputAudio = (arrayBuffer) => {
+        const sb = sourceBufferRef.current;
+        if (sb && !sb.updating && audioQueueRef.current.length === 0) {
             try {
-                const nextChunk = audioQueueRef.current.shift();
-                if (nextChunk) sourceBufferRef.current.appendBuffer(nextChunk);
+                sb.appendBuffer(arrayBuffer);
             } catch (e) {
-                console.debug("Buffer append error:", e);
+                console.error("Direct append error:", e);
+                audioQueueRef.current.push(arrayBuffer);
             }
+        } else {
+            audioQueueRef.current.push(arrayBuffer);
         }
 
-
-        if (audioRef.current && audioRef.current.paused) {
-            audioRef.current.play().catch(e => console.debug("Play blocked or failed:", e));
-        }
-
-
-        if (audioContextRef.current?.state === 'suspended') {
-            audioContextRef.current.resume();
+        if (audioRef.current.paused && (sb?.buffered.length > 0 || audioQueueRef.current.length > 0)) {
+            audioRef.current.play().catch(e => console.debug("Autoplay block:", e));
         }
     };
-
-    const isAiSpeakingRef = useRef(false);
 
     useEffect(() => {
         isAiSpeakingRef.current = (status === "speaking" || displayedStatus === "speaking");
@@ -203,21 +243,44 @@ export default function DashboardPage() {
         setIsGreetingFinished(false);
     };
 
+    const [isAudioReallyPlaying, setIsAudioReallyPlaying] = useState(false);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handlePlaying = () => setIsAudioReallyPlaying(true);
+        const handlePause = () => setIsAudioReallyPlaying(false);
+        const handleEnded = () => setIsAudioReallyPlaying(false);
+
+        audio.addEventListener('playing', handlePlaying);
+        audio.addEventListener('pause', handlePause);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('playing', handlePlaying);
+            audio.removeEventListener('pause', handlePause);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, []);
+
     useEffect(() => {
         if (status === "speaking") {
-            setDisplayedStatus("speaking");
+            if (isAudioReallyPlaying) {
+                setDisplayedStatus("speaking");
+            } else {
+                setDisplayedStatus("thinking");
+            }
         } else if (status === "listening") {
-            // Buffer sync: Delay visual switch to listening 
-            // to allow browser audio buffer to drain
             const timer = setTimeout(() => {
                 setDisplayedStatus("listening");
                 if (!isGreetingFinished) setIsGreetingFinished(true);
-            }, 800);
+            }, 200);
             return () => clearTimeout(timer);
         } else {
             setDisplayedStatus(status);
         }
-    }, [status, isGreetingFinished]);
+    }, [status, isAudioReallyPlaying, isGreetingFinished]);
 
     useEffect(() => {
         if (isGreetingFinished && isActive && !micStreamRef.current && displayedStatus === "listening") {
@@ -247,6 +310,12 @@ export default function DashboardPage() {
             socket.onopen = () => {
                 console.log("Nebula Connected");
                 setIsActive(true);
+
+                const token = localStorage.getItem("token");
+                if (token) {
+                    socket.send(JSON.stringify({ type: "auth", token }));
+                }
+
                 if (audioContextRef.current) {
                     socket.send(JSON.stringify({
                         type: "config",
@@ -275,9 +344,21 @@ export default function DashboardPage() {
                     if (data.detail) setStatusDetail(data.detail);
                 }
 
+                if (data.type === "user_text") {
+                    addToHistory("user", data.text);
+                }
+
+                if (data.type === "ai_text") {
+                    addToHistory("ai", data.text);
+                }
+
+                if (data.type === "clear_audio") {
+                    stopAudio();
+                }
+
                 if (data.type === "search") {
-                    setSearchResults(data.results);
-                    addToHistory("system", `Found info: ${data.results.substring(0, 50)}...`);
+                    setSources(data.results);
+                    addToHistory("system", `Found ${data.results.length} sources...`);
                 }
 
                 if (data.type === "error") {
@@ -310,7 +391,7 @@ export default function DashboardPage() {
 
         if (isActive) stopRecording();
         else {
-            setSearchResults("");
+            setSources([]);
             setStatusDetail("");
             startRecording();
         }
@@ -318,7 +399,7 @@ export default function DashboardPage() {
 
     return (
         <DashboardLayout>
-            <div className="relative flex min-h-full py-8 md:min-h-[calc(100vh-64px)] p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="relative flex flex-col min-h-full py-8 md:min-h-[calc(100vh-64px)] p-4 md:p-6 max-w-7xl mx-auto">
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col items-center justify-center relative">
                     <div className="absolute inset-0 pointer-events-none">
@@ -341,6 +422,50 @@ export default function DashboardPage() {
                     <div className="flex flex-col items-center gap-6 md:gap-12 w-full max-w-lg z-10">
                         <VoiceOrb status={displayedStatus} volume={volume} />
 
+                        {/* Research Panel (Perplexity-style) */}
+                        <AnimatePresence>
+                            {sources.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    className="w-full space-y-3 mb-2"
+                                >
+                                    <div className="flex items-center gap-2 px-1">
+                                        <Globe className="h-3 w-3 text-primary animate-pulse" />
+                                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Sources Found</h3>
+                                    </div>
+                                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1">
+                                        {sources.map((src, i) => (
+                                            <motion.a
+                                                key={i}
+                                                href={src.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="shrink-0 w-40 glass-premium p-3 rounded-xl border-white/5 hover:border-primary/30 transition-all group relative overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="h-4 w-4 rounded bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                                                        <img
+                                                            src={`https://www.google.com/s2/favicons?domain=${new URL(src.url).hostname}&sz=32`}
+                                                            alt=""
+                                                            className="h-2.5 w-2.5"
+                                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-[9px] font-medium truncate opacity-60 flex-1">{new URL(src.url).hostname}</span>
+                                                    <ExternalLink className="h-2 w-2 opacity-0 group-hover:opacity-60 transition-opacity" />
+                                                </div>
+                                                <h4 className="text-[10px] font-bold line-clamp-1 mb-1 group-hover:text-primary transition-colors">{src.title}</h4>
+                                                <p className="text-[8px] line-clamp-2 opacity-40 leading-relaxed">{src.content}</p>
+                                            </motion.a>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* History Panel */}
                         <div className="w-full max-w-md h-56 overflow-y-auto glass-premium p-6 space-y-4 mb-4 scrollbar-hide">
                             {history.length === 0 && (
@@ -349,7 +474,7 @@ export default function DashboardPage() {
                                     <p className="text-center text-xs italic">Awaiting transmission...</p>
                                 </div>
                             )}
-                            <AnimatePresence mode="wait">
+                            <AnimatePresence mode="popLayout">
                                 {history.map((msg, i) => (
                                     <motion.div
                                         key={i}
@@ -380,7 +505,7 @@ export default function DashboardPage() {
                             <motion.h1
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="text-3xl md:text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/40"
+                                className="text-3xl md:text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/40 text-center"
                             >
                                 {displayedStatus === "idle" ? "NEBULA AI" :
                                     displayedStatus === "searching" ? "BROWSING..." : "HOW CAN I HELP?"}
@@ -428,84 +553,10 @@ export default function DashboardPage() {
                         <MetricCard icon={ShieldCheck} label="Security" value="Secure" color="text-cyan-500" />
                     </div>
                 </div>
-
-                {/* Right Panel for Search Results */}
-                <AnimatePresence>
-                    {searchResults && (
-                        <motion.div
-                            initial={{ x: 400, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: 400, opacity: 0 }}
-                            className="hidden xl:flex flex-col w-[450px] border-l border-white/5 glass-premium rounded-none p-10 overflow-y-auto"
-                        >
-                            <div className="flex items-center justify-between mb-10">
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2.5 bg-primary/10 rounded-xl">
-                                            <Globe className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <h2 className="text-2xl font-black tracking-tighter uppercase italic">Intelligence</h2>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest ml-1">Live Web Processing</p>
-                                </div>
-                                <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                    Live
-                                </div>
-                            </div>
-
-                            <div className="space-y-8">
-                                {searchResults.split('\n\n').filter(r => r.trim()).map((result, i) => {
-                                    const lines = result.split('\n');
-                                    const title = lines.find(l => l.startsWith('Title:'))?.replace('Title:', '').trim() || "Insight";
-                                    const url = lines.find(l => l.startsWith('URL:'))?.replace('URL:', '').trim();
-                                    const content = lines.find(l => l.startsWith('Content:'))?.replace('Content:', '').trim() || result;
-
-                                    return (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: i * 0.1 }}
-                                        >
-                                            <Card className="p-6 glass-premium hover:bg-white/5 transition-all group border-white/5 hover:border-primary/20">
-                                                <h3 className="text-base font-bold text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">{title}</h3>
-                                                <p className="text-sm text-muted-foreground leading-relaxed mb-6 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                    {content}
-                                                </p>
-                                                {url && (
-                                                    <div className="flex items-center justify-between">
-                                                        <a
-                                                            href={url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2 hover:opacity-70"
-                                                        >
-                                                            Resource <Globe className="h-3 w-3" />
-                                                        </a>
-                                                        <div className="w-12 h-0.5 bg-white/5 rounded-full" />
-                                                    </div>
-                                                )}
-                                            </Card>
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
-
-                            <Button
-                                variant="outline"
-                                className="mt-12 h-12 glass-premium border-dashed border-primary/20 hover:bg-primary/5 text-xs font-black uppercase tracking-widest"
-                                onClick={() => setSearchResults("")}
-                            >
-                                Clear Knowledge Base
-                            </Button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
         </DashboardLayout>
     );
 }
-
 
 function MetricCard({ icon: Icon, label, value, color }) {
     return (

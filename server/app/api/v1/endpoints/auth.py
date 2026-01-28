@@ -52,3 +52,9 @@ def login_access_token(
         ),
         "token_type": "bearer",
     }
+
+@router.get("/me", response_model=UserSchema)
+def read_user_me(
+    current_user: User = Depends(deps.get_current_user)
+) -> Any:
+    return current_user

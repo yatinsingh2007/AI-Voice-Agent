@@ -32,7 +32,12 @@ export default function LoginPage() {
             });
 
             if (resp.data.access_token) {
-                authLogin(resp.data.access_token, { email }); // Update global state
+                const token = resp.data.access_token;
+                // Fetch user data immediately
+                const userResp = await axios.get("http://localhost:8000/api/v1/auth/me", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                authLogin(token, userResp.data);
                 router.push("/dashboard");
             }
         } catch (err) {
