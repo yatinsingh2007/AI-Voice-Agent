@@ -21,7 +21,6 @@ export default function DashboardLayout({ children }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Give AuthContext a moment to initialize from localStorage
         const timer = setTimeout(() => {
             setIsLoading(false);
             if (!localStorage.getItem("token")) {
@@ -149,9 +148,7 @@ export default function DashboardLayout({ children }) {
                 )}
             </AnimatePresence>
 
-            {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                {/* Mobile Top Header */}
                 <header className="flex h-16 items-center justify-between px-4 border-b border-border bg-card/50 backdrop-blur-xl md:hidden">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(true)}>

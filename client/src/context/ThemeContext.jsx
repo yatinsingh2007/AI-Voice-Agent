@@ -38,14 +38,14 @@ export function ThemeProvider({ children }) {
 
         const root = document.documentElement;
 
-        // Update DOM when theme changes
+
         if (theme === "dark") {
             root.classList.add("dark");
         } else {
             root.classList.remove("dark");
         }
 
-        // Persist to localStorage
+
         localStorage.setItem("theme", theme);
     }, [theme, mounted]);
 

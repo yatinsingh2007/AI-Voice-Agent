@@ -51,8 +51,7 @@
 
 :root {
   --radius: 0.75rem;
-  /* Light Mode - Clean White Background */
-  --background: oklch(0.99 0 0); /* Soft White */
+  --background: oklch(0.99 0 0); 
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -78,10 +77,9 @@
 }
 
 .dark {
-  /* Dark Mode - Deep Dark Background */
-  --background: oklch(0.09 0.01 220); /* Darker Midnight Blue/Black */
+  --background: oklch(0.09 0.01 220); 
   --foreground: oklch(0.98 0.005 220);
-  --card: oklch(0.15 0.015 220 / 0.7); /* Glassmorphism base */
+  --card: oklch(0.15 0.015 220 / 0.7); 
   --card-foreground: oklch(0.98 0.005 220);
   --popover: oklch(0.15 0.015 220);
   --popover-foreground: oklch(0.98 0.005 220);
@@ -179,7 +177,6 @@
     }
   }
 
-  /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

@@ -21,7 +21,6 @@ class AgentService:
         self.tavily = TavilyClient(api_key=self.tavily_key) if (self.tavily_key and not self.mock_mode) else None
 
     def clean_text(self, text: str) -> str:
-        """Clean search result text for speech."""
         import re
         text = re.sub(r'http\S+', '', text)
         text = re.sub(r'\[\d+\]', '', text)
@@ -33,7 +32,6 @@ class AgentService:
         return text
 
     def search_web(self, query: str) -> str:
-        """Perform a web search."""
         if self.mock_mode:
             return f"Mock search results for: {query}. (Tavily bypassed in MOCK_MODE)"
             
@@ -50,7 +48,6 @@ class AgentService:
             return f"Search failed: {str(e)}"
 
     async def _generate_mock_response(self, query: str) -> Generator[Dict[str, Any], None, None]:
-        """Generate smart mock responses when API is down or in Mock Mode."""
         q_lower = query.lower()
         
         
@@ -131,7 +128,6 @@ class AgentService:
 
 
     async def process_query(self, query: str, history: List[Dict] = []) -> Generator[Dict[str, Any], None, None]:
-        """Process user query."""
         if self.mock_mode:
              async for response in self._generate_mock_response(query):
                  yield response

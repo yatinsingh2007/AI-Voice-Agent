@@ -19,7 +19,6 @@ export default function DashboardPage() {
     const [isGreetingFinished, setIsGreetingFinished] = useState(false);
     const [displayedStatus, setDisplayedStatus] = useState("idle");
 
-    // History State
     const [history, setHistory] = useState([]);
     const historyEndRef = useRef(null);
 
@@ -35,7 +34,6 @@ export default function DashboardPage() {
     const sourceNodeRef = useRef(null);
     const noiseThreshold = 0.02;
 
-    // Auto-scroll history
     useEffect(() => {
         historyEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [history]);
@@ -50,7 +48,7 @@ export default function DashboardPage() {
         }
         audioQueueRef.current = [];
 
-        // Clear MSE buffer to prevent old audio from playing later
+
         if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
             try {
                 if (sourceBufferRef.current.buffered.length > 0) {
@@ -62,13 +60,10 @@ export default function DashboardPage() {
         }
     };
 
-    // Initialize Audio and MediaSource once on mount
     useEffect(() => {
-        // 1. Create AudioContext and Analyser
         const context = new (window.AudioContext || window.webkitAudioContext)();
         audioContextRef.current = context;
 
-        // Attempt to resume immediately
         context.resume().catch(() => console.debug("Autoplay restricted"));
 
         const analyser = context.createAnalyser();
@@ -76,7 +71,8 @@ export default function DashboardPage() {
 
         analyserRef.current = analyser;
 
-        // 2. Setup MediaSource and Audio Element
+        analyserRef.current = analyser;
+
         const mediaSource = new MediaSource();
         mediaSourceRef.current = mediaSource;
 
@@ -84,18 +80,17 @@ export default function DashboardPage() {
         audio.src = URL.createObjectURL(mediaSource);
         audioRef.current = audio;
 
-        // 3. Permanent Connection: Connect HTMLMediaElement to context
-        sourceNodeRef.current = context.createMediaElementSource(audio);
-        sourceNodeRef.current.connect(analyser); // For visualization
-        sourceNodeRef.current.connect(context.destination); // For AI audio output
+        audioRef.current = audio;
 
-        // 4. Handle MediaSource Opening
+        sourceNodeRef.current = context.createMediaElementSource(audio);
+        sourceNodeRef.current.connect(analyser);
+        sourceNodeRef.current.connect(context.destination);
+
         const handleSourceOpen = () => {
             try {
                 const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
                 sourceBufferRef.current = sourceBuffer;
 
-                // Process any chunks that arrived before MSE was ready
                 if (audioQueueRef.current.length > 0) {
                     sourceBuffer.appendBuffer(audioQueueRef.current.shift());
                 }
@@ -122,14 +117,10 @@ export default function DashboardPage() {
         };
     }, []);
 
-    // We removed the auto-start on mount to prevent browser-muted greetings 
-    // causing a perceived delay. The user now 'Wakes' Nebula by clicking the mic.
-
     const playOutputAudio = async (arrayBuffer) => {
-        // Always push to queue first to ensure order and avoid loss
         audioQueueRef.current.push(arrayBuffer);
 
-        // If buffer is ready and not updating, trigger the next chunk
+
         if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
             try {
                 const nextChunk = audioQueueRef.current.shift();
@@ -139,12 +130,12 @@ export default function DashboardPage() {
             }
         }
 
-        // Ensure audio element is playing (might be paused after interruption)
+
         if (audioRef.current && audioRef.current.paused) {
             audioRef.current.play().catch(e => console.debug("Play blocked or failed:", e));
         }
 
-        // Ensure context is resumed on user interaction
+
         if (audioContextRef.current?.state === 'suspended') {
             audioContextRef.current.resume();
         }
@@ -153,7 +144,6 @@ export default function DashboardPage() {
     const isAiSpeakingRef = useRef(false);
 
     useEffect(() => {
-        // Sync ref with status for use in event listeners
         isAiSpeakingRef.current = (status === "speaking" || displayedStatus === "speaking");
     }, [status, displayedStatus]);
 
@@ -170,7 +160,6 @@ export default function DashboardPage() {
             });
             micStreamRef.current = stream;
 
-            // Ensure worklet is loaded
             try {
                 await audioContextRef.current.audioWorklet.addModule('/audio-processor.js');
             } catch (e) {
@@ -182,8 +171,6 @@ export default function DashboardPage() {
 
             source.connect(analyserRef.current);
             source.connect(workletNode);
-            // We connect to destination only if we want to hear our own voice (usually not)
-            // workletNode.connect(audioContextRef.current.destination);
 
             workletNode.port.onmessage = (event) => {
                 if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -204,7 +191,6 @@ export default function DashboardPage() {
 
     const stopRecording = () => {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        // We do NOT close the AudioContext here to keep persistent nodes alive
         if (micStreamRef.current) {
             micStreamRef.current.getTracks().forEach(track => track.stop());
             micStreamRef.current = null;

@@ -23,7 +23,6 @@ groq_key = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=groq_key) if groq_key else None
 
 async def transcribe_audio(audio_bytes: bytes, sample_rate: int) -> str:
-    """Transcribe PCM bytes using Groq Whisper API (Scalable & Fast)."""
     if not os.getenv("GROQ_API_KEY"):
         print("GROQ_API_KEY not found. Falling back to empty transcription.")
         return ""
@@ -60,11 +59,6 @@ async def generate_welcome_audio(text: str) -> bytes:
     return audio_data
 
 def clean_audio(data: bytes) -> bytes:
-    """
-    Perform robust audio cleaning:
-    - Normalization: Scale audio to consistent peaks.
-    - Noise Gate: Use a soft threshold to remove floor noise.
-    """
     if not data:
         return data
     samples = np.frombuffer(data, dtype=np.int16).astype(np.float32)

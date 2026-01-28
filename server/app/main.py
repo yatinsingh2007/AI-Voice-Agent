@@ -6,7 +6,6 @@ from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base
 
-# Create tables – for production, use Alembic migrations
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -15,7 +14,6 @@ app = FastAPI(
     description="Scalable VoiceAI Voice Agent Backend"
 )
 
-# Set all CORS enabled origins
 origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS]
 if settings.FRONTEND_URL:
     origins.append(settings.FRONTEND_URL)
