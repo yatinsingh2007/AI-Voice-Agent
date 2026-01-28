@@ -124,3 +124,503 @@ https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/READM
 INFO:     Started server process [22969]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22969]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Started server process [24516]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [24920]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [24925]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24925]
+Process SpawnProcess-12:
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/opt/homebrew/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/config.py", line 439, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/myenv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.4/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/main.py", line 4, in <module>
+    from app.api.api import api_router
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/api/api.py", line 2, in <module>
+    from app.api.v1 import api
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/api/v1/api.py", line 2, in <module>
+    from app.api.v1.endpoints import voice, auth
+  File "/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/api/v1/endpoints/voice.py", line 6, in <module>
+    import speech_recognition as sr
+ModuleNotFoundError: No module named 'speech_recognition'
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/cli.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__main__.py', 'myenv/lib/python3.13/site-packages/audioop/__init__.py', 'myenv/lib/python3.13/site-packages/chunk/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/audio.py', 'myenv/lib/python3.13/site-packages/aifc/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/exceptions.py'. Reloading...
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/vosk.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/base.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/openai.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__main__.py', 'myenv/lib/python3.13/site-packages/tests/test_audio.py', 'myenv/lib/python3.13/site-packages/audioop/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/whisper.py', 'myenv/lib/python3.13/site-packages/chunk/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/pocketsphinx.py', 'myenv/lib/python3.13/site-packages/speech_recognition/audio.py', 'app/api/v1/endpoints/voice.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/__init__.py', 'myenv/lib/python3.13/site-packages/aifc/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/base.py', 'myenv/lib/python3.13/site-packages/speech_recognition/cli.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/groq.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google_cloud.py', 'myenv/lib/python3.13/site-packages/tests/test_recognition.py', 'myenv/lib/python3.13/site-packages/speech_recognition/exceptions.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/faster_whisper.py', 'myenv/lib/python3.13/site-packages/tests/test_special_features.py', 'myenv/lib/python3.13/site-packages/tests/__init__.py'. Reloading...
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25428]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/vosk.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/base.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/openai.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__main__.py', 'myenv/lib/python3.13/site-packages/tests/test_audio.py', 'myenv/lib/python3.13/site-packages/audioop/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/whisper.py', 'myenv/lib/python3.13/site-packages/chunk/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/pocketsphinx.py', 'myenv/lib/python3.13/site-packages/speech_recognition/audio.py', 'app/api/v1/endpoints/voice.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/__init__.py', 'myenv/lib/python3.13/site-packages/aifc/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/base.py', 'myenv/lib/python3.13/site-packages/speech_recognition/cli.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/groq.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google_cloud.py', 'myenv/lib/python3.13/site-packages/tests/test_recognition.py', 'myenv/lib/python3.13/site-packages/speech_recognition/exceptions.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/faster_whisper.py', 'myenv/lib/python3.13/site-packages/tests/test_special_features.py', 'myenv/lib/python3.13/site-packages/tests/__init__.py'. Reloading...
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25516]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25521]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/audio.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25521]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/cli.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__main__.py', 'myenv/lib/python3.13/site-packages/audioop/__init__.py', 'myenv/lib/python3.13/site-packages/chunk/__init__.py', 'myenv/lib/python3.13/site-packages/aifc/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/exceptions.py'. Reloading...
+INFO:     Started server process [25523]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25532]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/base.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25532]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25533]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/vosk.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/base.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/openai.py', 'myenv/lib/python3.13/site-packages/tests/test_audio.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/whisper.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/pocketsphinx.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_api/groq.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/google_cloud.py', 'myenv/lib/python3.13/site-packages/tests/test_recognition.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/__init__.py', 'myenv/lib/python3.13/site-packages/speech_recognition/recognizers/whisper_local/faster_whisper.py', 'myenv/lib/python3.13/site-packages/tests/test_special_features.py', 'myenv/lib/python3.13/site-packages/tests/__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25533]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25540]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25540]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25732]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25743]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25743]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [25877]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25877]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Started server process [26010]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26022]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26035]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26035]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Started server process [26227]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26240]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26248]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26248]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Started server process [26436]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26447]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26447]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26715]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26715]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Started server process [26736]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Started server process [26744]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [26751]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26751]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Started server process [27041]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [27051]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27051]
+/Users/kshtriyatinsingh/Desktop/AI-Voice-Agent/server/app/services/agent.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+INFO:     Started server process [27188]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27188]
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x000000020cddec40 (most recent call first):
+  <no Python frame>
+WARNING:  WatchFiles detected changes in 'app/api/v1/endpoints/voice.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x000000020cddec40 (most recent call first):
+  <no Python frame>
+WARNING:  WatchFiles detected changes in 'app/services/agent.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x000000020cddec40 (most recent call first):
+  <no Python frame>

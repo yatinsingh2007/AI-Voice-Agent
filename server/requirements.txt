@@ -16,3 +16,5 @@ alembic
 bcrypt==3.2.0
 google-generativeai
 tavily-python
+groq
+pydub
